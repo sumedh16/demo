@@ -1,1 +1,76 @@
-this is a demo file
+import React from "react";
+
+function TreeNode({ node, x, y, nodeWidth, nodeHeight }) {
+  const nodeSpacing = 10;
+  const connectorHeight = 20;
+
+  const { parent, value, left, right } = node;
+
+  const parentX = parent === null ? x : x - nodeWidth / 2 + nodeSpacing / 2;
+  const parentY = parent === null ? y : y - connectorHeight;
+
+  const leftChildX = x - nodeWidth / 2 - nodeSpacing;
+  const leftChildY = y + nodeHeight + connectorHeight;
+
+  const rightChildX = x + nodeWidth / 2 + nodeSpacing;
+  const rightChildY = y + nodeHeight + connectorHeight;
+
+  return (
+    <g>
+      {parent !== null && (
+        <line
+          x1={x}
+          y1={y}
+          x2={parentX}
+          y2={parentY}
+          stroke="black"
+          strokeWidth="2"
+        />
+      )}
+
+      <rect x={x - nodeWidth / 2} y={y} width={nodeWidth} height={nodeHeight} />
+
+      <text x={x} y={y + nodeHeight / 2} textAnchor="middle" dominantBaseline="central">
+        {value}
+      </text>
+
+      {left !== null && (
+        <TreeNode node={left} x={leftChildX} y={leftChildY} nodeWidth={nodeWidth} nodeHeight={nodeHeight} />
+      )}
+
+      {right !== null && (
+        <TreeNode node={right} x={rightChildX} y={rightChildY} nodeWidth={nodeWidth} nodeHeight={nodeHeight} />
+      )}
+    </g>
+  );
+}
+
+function BinaryTree({ nodes }) {
+  const nodeWidth = 60;
+  const nodeHeight = 30;
+  const treeData = {};
+
+  nodes.forEach((node) => {
+    treeData[node.value] = { ...node };
+    treeData[node.value].children = [];
+  });
+
+  Object.keys(treeData).forEach((key) => {
+    const node = treeData[key];
+    if (node.parent !== null) {
+      treeData[node.parent].children.push(node);
+    }
+  });
+
+  const rootNode = Object.values(treeData).find((node) => node.parent === null);
+
+  return (
+    <svg height="500" width="500">
+      <TreeNode node={rootNode} x={250} y={50} nodeWidth={nodeWidth} nodeHeight={nodeHeight} />
+    </svg>
+  );
+}
+
+export default BinaryTree;
+
+
