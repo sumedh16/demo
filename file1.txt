@@ -1,76 +1,76 @@
-import React from "react";
+import { useState } from "react";
 
-function TreeNode({ node, x, y, nodeWidth, nodeHeight }) {
-  const nodeSpacing = 10;
-  const connectorHeight = 20;
+function BST() {
+  const [nodes, setNodes] = useState([]);
+  const [value, setValue] = useState('');
 
-  const { parent, value, left, right } = node;
-
-  const parentX = parent === null ? x : x - nodeWidth / 2 + nodeSpacing / 2;
-  const parentY = parent === null ? y : y - connectorHeight;
-
-  const leftChildX = x - nodeWidth / 2 - nodeSpacing;
-  const leftChildY = y + nodeHeight + connectorHeight;
-
-  const rightChildX = x + nodeWidth / 2 + nodeSpacing;
-  const rightChildY = y + nodeHeight + connectorHeight;
-
-  return (
-    <g>
-      {parent !== null && (
-        <line
-          x1={x}
-          y1={y}
-          x2={parentX}
-          y2={parentY}
-          stroke="black"
-          strokeWidth="2"
-        />
-      )}
-
-      <rect x={x - nodeWidth / 2} y={y} width={nodeWidth} height={nodeHeight} />
-
-      <text x={x} y={y + nodeHeight / 2} textAnchor="middle" dominantBaseline="central">
-        {value}
-      </text>
-
-      {left !== null && (
-        <TreeNode node={left} x={leftChildX} y={leftChildY} nodeWidth={nodeWidth} nodeHeight={nodeHeight} />
-      )}
-
-      {right !== null && (
-        <TreeNode node={right} x={rightChildX} y={rightChildY} nodeWidth={nodeWidth} nodeHeight={nodeHeight} />
-      )}
-    </g>
-  );
-}
-
-function BinaryTree({ nodes }) {
-  const nodeWidth = 60;
-  const nodeHeight = 30;
-  const treeData = {};
-
-  nodes.forEach((node) => {
-    treeData[node.value] = { ...node };
-    treeData[node.value].children = [];
-  });
-
-  Object.keys(treeData).forEach((key) => {
-    const node = treeData[key];
-    if (node.parent !== null) {
-      treeData[node.parent].children.push(node);
+  const handleInsert = (value) => {
+    const newNode = {
+      value: value,
+      left: null,
+      right: null,
+      parent: null
+    };
+    let currentNodeIndex = 0;
+    while (true) {
+      const currentNode = nodes[currentNodeIndex];
+      if (!currentNode) {
+        setNodes([...nodes, newNode]);
+        break;
+      }
+      if (value < currentNode.value) {
+        if (currentNode.left === null) {
+          const newNodes = [...nodes];
+          currentNode.left = newNodes.length;
+          newNode.parent = currentNodeIndex;
+          newNodes.push(newNode);
+          newNodes[currentNodeIndex] = currentNode;
+          setNodes(newNodes);
+          break;
+        } else {
+          currentNodeIndex = currentNode.left;
+        }
+      } else {
+        if (currentNode.right === null) {
+          const newNodes = [...nodes];
+          currentNode.right = newNodes.length;
+          newNode.parent = currentNodeIndex;
+          newNodes.push(newNode);
+          newNodes[currentNodeIndex] = currentNode;
+          setNodes(newNodes);
+          break;
+        } else {
+          currentNodeIndex = currentNode.right;
+        }
+      }
     }
-  });
-
-  const rootNode = Object.values(treeData).find((node) => node.parent === null);
+  };
 
   return (
-    <svg height="500" width="500">
-      <TreeNode node={rootNode} x={250} y={50} nodeWidth={nodeWidth} nodeHeight={nodeHeight} />
-    </svg>
+    <div>
+      <input
+        type="text"
+        onChange={(e) => setValue(e.target.value)}
+      />
+      <button onClick={() => handleInsert(value)}>Insert</button>
+      {nodes.map((node, index) => (
+        <div key={index}>
+        [{index}] Value: {node.value} | Parent: {node.parent} | Left: {node.left} | Right: {node.right}
+      </div>
+      ))}
+    </div>
   );
 }
 
-export default BinaryTree;
+function App() {
+  return (
+    <div className="App">
+      <BST />
+    </div>
+  );
+}
+
+export default App;
+
 
 
