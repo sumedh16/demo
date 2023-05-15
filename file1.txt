@@ -1,15 +1,75 @@
-import { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 function BST() {
   const [nodes, setNodes] = useState([]);
-  const [value, setValue] = useState('');
+  const [value, setValue] = useState("");
+
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const nodeRadius = 15; // decreased node radius
+     // decreased node gap
+    const fontSize = 14;
+    ctx.font = `${fontSize}px Arial`;
+
+    const drawNode = (node, x, y, level) => {
+      
+      console.log(nodes);
+      ctx.beginPath();
+      ctx.arc(x, y, nodeRadius, 0, 2 * Math.PI);
+      ctx.fillStyle = "white";
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "black";
+      ctx.fillText(node.value, x - fontSize / 2, y + fontSize / 2);
+      const nodeGap = 60+level * 10;
+      if (node.left !== null) {
+        const leftChild = nodes[node.left];
+        const leftX = x - nodeGap 
+        const leftY = y + nodeGap;
+
+
+        ctx.beginPath();
+        ctx.moveTo(x, y + nodeRadius);
+        ctx.lineTo(leftX, leftY - nodeRadius);
+        ctx.stroke();
+        drawNode(leftChild, leftX, leftY, level + 1);
+      }
+
+      if (node.right !== null) {
+        const rightChild = nodes[node.right];
+        const rightX = x + nodeGap 
+        const rightY = y + nodeGap;
+
+      
+        ctx.beginPath();
+        ctx.moveTo(x, y + nodeRadius);
+        ctx.lineTo(rightX, rightY - nodeRadius);
+        ctx.stroke();
+        drawNode(rightChild, rightX, rightY, level + 1);
+      }
+    };
+
+
+    nodes.forEach((node, index) => {
+      if (index === 0) {
+        drawNode(node, canvas.width / 2, nodeRadius + 50, 0);
+      }
+    });
+  }, [nodes]);
 
   const handleInsert = (value) => {
+    const ivalue = parseInt(value, 10);
+    setValue(ivalue);
     const newNode = {
       value: value,
       left: null,
       right: null,
-      parent: null
+      parent: null,
     };
     let currentNodeIndex = 0;
     while (true) {
@@ -18,7 +78,7 @@ function BST() {
         setNodes([...nodes, newNode]);
         break;
       }
-      if (value < currentNode.value) {
+      if (ivalue <= currentNode.value) {
         if (currentNode.left === null) {
           const newNodes = [...nodes];
           currentNode.left = newNodes.length;
@@ -48,29 +108,22 @@ function BST() {
 
   return (
     <div>
-      <input
-        type="text"
-        onChange={(e) => setValue(e.target.value)}
-      />
-      <button onClick={() => handleInsert(value)}>Insert</button>
-      {nodes.map((node, index) => (
-        <div key={index}>
-        [{index}] Value: {node.value} | Parent: {node.parent} | Left: {node.left} | Right: {node.right}
-      </div>
-      ))}
-    </div>
+       <canvas ref={canvasRef} width={900} height={600}></canvas>
+       <input type="text" onChange={(e) => setValue(e.target.value)} />
+       <button onClick={() => handleInsert(value)}>Insert</button>
+     </div>
   );
 }
 
 function App() {
-  return (
-    <div className="App">
-      <BST />
-    </div>
-  );
-}
-
-export default App;
+      return (
+        <div className="App">
+          <BST />
+        </div>
+      );
+    }
+    
+    export default App;
 
 
 
