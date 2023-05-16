@@ -1,0 +1,75 @@
+import { useState } from "react";
+
+function BST() {
+  const [nodes, setNodes] = useState([]);
+  const [value, setValue] = useState('');
+
+  const handleInsert = (value) => {
+    const ivalue=parseInt(value,10);
+    setValue(ivalue);
+    const newNode = {
+      value: value,
+      left: null,
+      right: null,
+      parent: null
+    };
+    let currentNodeIndex = 0;
+    while (true) {
+      const currentNode = nodes[currentNodeIndex];
+      if (!currentNode) {
+        setNodes([...nodes, newNode]);
+        break;
+      }
+      if (ivalue <= currentNode.value) {
+        if (currentNode.left === null) {
+          const newNodes = [...nodes];
+          currentNode.left = newNodes.length;
+          newNode.parent = currentNodeIndex;
+          newNodes.push(newNode);
+          newNodes[currentNodeIndex] = currentNode;
+          setNodes(newNodes);
+          break;
+        } else {
+          currentNodeIndex = currentNode.left;
+        }
+      } else {
+        if (currentNode.right === null) {
+          const newNodes = [...nodes];
+          currentNode.right = newNodes.length;
+          newNode.parent = currentNodeIndex;
+          newNodes.push(newNode);
+          newNodes[currentNodeIndex] = currentNode;
+          setNodes(newNodes);
+          break;
+        } else {
+          currentNodeIndex = currentNode.right;
+        }
+      }
+    }
+  };
+
+  return (
+    <div>
+      <input
+        type="text"
+        onChange={(e) => setValue(e.target.value)}
+      />
+      <button onClick={() => handleInsert(value)}>Insert</button>
+      {nodes.map((node, index) => (
+        <div key={index}>
+        [{index}] Value: {node.value} | Parent: {node.parent} | Left: {node.left} | Right: {node.right}
+      </div>
+      ))}
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <div className="App">
+      <BST />
+    </div>
+  );
+}
+
+export default App;
