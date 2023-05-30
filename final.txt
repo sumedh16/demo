@@ -1,0 +1,264 @@
+
+import React, { useState, useEffect, useRef } from "react";
+import firebase from "firebase/compat/app";
+import "firebase/compat/firestore";
+
+function BST() {
+  const [nodes, setNodes] = useState([]);
+  const [value, setValue] = useState("");
+  const [treeName, setTreeName] = useState("");
+  const [shapeType, setShapeType] = useState("circle");
+  const [savedTrees, setSavedTrees] = useState([]);
+  const [selectedTree, setSelectedTree] = useState("");
+
+  const canvasRef = useRef(null);
+
+  const firebaseConfig = {
+    // Your Firebase configuration
+    apiKey: "AIzaSyAzrjEU6Pr12gOT_hhqg8j2eHA37s9SUGE",
+    authDomain: "tree-deb80.firebaseapp.com",
+    projectId: "tree-deb80",
+    storageBucket: "tree-deb80.appspot.com",
+    messagingSenderId: "402582428031",
+    appId: "1:402582428031:web:ce3f7bdb8f592b084aa24a",
+  };
+
+  firebase.initializeApp(firebaseConfig);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const nodeRadius = 15;
+    const fontSize = 12;
+    ctx.font = `${fontSize}px Arial`;
+
+    const drawNode = (node, x, y, level) => {
+      ctx.beginPath();
+      if (shapeType === "circle") {
+        ctx.arc(x, y, nodeRadius, 0, 2 * Math.PI);
+      } else if (shapeType === "square") {
+        const squareSize = nodeRadius * 2;
+        ctx.rect(x - nodeRadius, y - nodeRadius, squareSize, squareSize);
+      }
+      ctx.fillStyle = "white";
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "black";
+      ctx.fillText(node.value, x - fontSize / 2, y + fontSize / 2);
+      const nodeGap = 65 + level * 5;
+      if (node.left !== null) {
+        const leftChild = nodes[node.left];
+        const leftX = x - nodeGap / Math.pow(2, level);
+        const leftY = y + nodeGap;
+
+        ctx.beginPath();
+        ctx.moveTo(x, y + nodeRadius);
+        ctx.lineTo(leftX, leftY - nodeRadius);
+        ctx.stroke();
+        drawNode(leftChild, leftX, leftY, level + 1);
+      }
+
+      if (node.right !== null) {
+        const rightChild = nodes[node.right];
+        const rightX = x + nodeGap / Math.pow(2, level);
+        const rightY = y + nodeGap;
+
+        ctx.beginPath();
+        ctx.moveTo(x, y + nodeRadius);
+        ctx.lineTo(rightX, rightY - nodeRadius);
+        ctx.stroke();
+        drawNode(rightChild, rightX, rightY, level + 1);
+      }
+    };
+
+    nodes.forEach((node, index) => {
+      if (index === 0) {
+        drawNode(node, canvas.width / 2, nodeRadius + 50, 0);
+      }
+    });
+  }, [nodes, shapeType]);
+
+  useEffect(() => {
+    const getSavedTrees = async () => {
+      try {
+        const db = firebase.firestore();
+        const snapshot = await db.collection("trees").get();
+        const treeOptions = snapshot.docs.map((doc) => ({
+          name: doc.id,
+          nodes: doc.data().nodes,
+        }));
+        setSavedTrees(treeOptions);
+      } catch (error) {
+        console.error("Error fetching saved trees:", error);
+      }
+    };
+
+    getSavedTrees();
+  }, []);
+
+  const handleInsert = (value) => {
+    const ivalue = parseInt(value, 10);
+    if (isNaN(ivalue)) {
+      alert("Please enter a valid number.");
+      return;
+    }
+    setValue(ivalue.toString());
+    const newNode = {
+      value: value,
+      left: null,
+      right: null,
+      parent: null,
+    };
+    let currentNodeIndex = 0;
+    while (true) {
+      const currentNode = nodes[currentNodeIndex];
+      if (!currentNode) {
+        setNodes([...nodes, newNode]);
+        break;
+      }
+      if (ivalue <= currentNode.value) {
+        if (currentNode.left === null) {
+          const newNodes = [...nodes];
+          currentNode.left = newNodes.length;
+          newNode.parent = currentNodeIndex;
+          newNodes.push(newNode);
+          newNodes[currentNodeIndex] = currentNode;
+          setNodes(newNodes);
+          break;
+        } else {
+          currentNodeIndex = currentNode.left;
+        }
+      } else {
+        if (currentNode.right === null) {
+          const newNodes = [...nodes];
+          currentNode.right = newNodes.length;
+          newNode.parent = currentNodeIndex;
+          newNodes.push(newNode);
+          newNodes[currentNodeIndex] = currentNode;
+          setNodes(newNodes);
+          break;
+        } else {
+          currentNodeIndex = currentNode.right;
+        }
+      }
+    }
+  };
+
+  const handleShapeChange = (e) => {
+    setShapeType(e.target.value);
+  };
+
+  const handleSave = () => {
+    const existingTree = savedTrees.find((tree) => tree.name === treeName);
+
+    if (existingTree && treeName !== selectedTree) {
+      const confirmation = window.confirm(
+        `A tree with the name "${treeName}" already exists. Do you want to override it?`
+      );
+
+      if (!confirmation) {
+        alert("Please enter a new tree name.");
+        return;
+      }
+    }
+    const db = firebase.firestore();
+    const treeData = {
+      nodes: nodes,
+    };
+
+    if (treeName.trim() === "") {
+      console.error("Tree name cannot be empty.");
+      return;
+    }
+
+    db.collection("trees")
+      .doc(treeName)
+      .set(treeData)
+      .then(() => {
+        console.log("Tree saved successfully with name:", treeName);
+        alert("Tree saved successfully.");
+
+        setSelectedTree(treeName);
+        setSavedTrees((prevTrees) => {
+          // const treeExists = prevTrees.find((tree) => tree.name === treeName);
+          if (existingTree) {
+            existingTree.nodes=nodes;
+            return prevTrees;
+          }
+          return [...prevTrees, { name: treeName, nodes:nodes }];
+        });
+      })
+      .catch((error) => {
+        console.error("Error saving tree:", error);
+      });
+  };
+
+  const handleTreeSelect = async (e) => {
+    const selectedTreeName = e.target.value;
+    if (selectedTreeName !== "newtree") {
+      setSelectedTree(selectedTreeName);
+      // setTreeName(selectedTreeName);
+
+      // const selectedTreeOptions = savedTrees.find(
+      //   (tree) => tree.name === selectedTreeName
+      // );
+      // setNodes(selectedTreeOptions.nodes);
+      if (selectedTreeName === treeName) {
+        setNodes([...nodes]);
+      } else {
+        const selectedTreeOptions = savedTrees.find(
+          (tree) => tree.name === selectedTreeName
+        );
+        setNodes(selectedTreeOptions.nodes);
+        setTreeName(selectedTreeName);
+      }
+    } else {
+      setSelectedTree("");
+      setTreeName("");
+      setNodes([]);
+    }
+  };
+
+  return (
+    <div>
+      <div>
+        <input
+          type="number"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+        />
+        <button onClick={() => handleInsert(value)}>Insert</button>
+        <input
+          type="text"
+          value={treeName}
+          onChange={(e) => setTreeName(e.target.value)}
+          placeholder="Enter tree name"
+        />
+        <button onClick={() => handleSave()}>Save Tree</button>
+        <select value={selectedTree} onChange={handleTreeSelect}>
+          <option value="newtree">Create a New Tree</option>
+          {savedTrees.map((tree) => (
+            <option key={tree.name} value={tree.name}>
+              {tree.name}
+            </option>
+          ))}
+        </select>
+        <select value={shapeType} onChange={handleShapeChange}>
+          <option value="circle">Circle</option>
+          <option value="square">Square</option>
+        </select>
+      </div>
+      <canvas
+        ref={canvasRef}
+        width={800}
+        height={600}
+        style={{ border: "1px solid black" }}
+      />
+    </div>
+  );
+}
+
+export default BST;
